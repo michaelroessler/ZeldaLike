@@ -2,11 +2,11 @@
 <head>
 <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.6.4/jquery.min.js"></script>
 <script src="input.js"></script>
-<title>Space Sim</title>
+<title>Zelda Like</title>
 </head>
 <body>
 
-<canvas id="canvas" width="800" height="800" style="border: 4px solid black; margin: auto; display: block;"></canvas>
+<canvas id="canvas" width="800" height="640" style="border: 4px solid black; margin: auto; display: block;"></canvas>
 
 <script>
 var c;		// Canvas
@@ -15,9 +15,14 @@ var ctx;	// Context
 var W;	// Width
 var H;	// Height
 
-var time, diff;
+var GridL;	// Grid space length
+var GridR;	// Grid space radius (length / 2)
+
+var time=0, diff=0;
 
 var objs = [];
+
+var inputs = [];
 
 
 function setup() {
@@ -27,9 +32,21 @@ function setup() {
 	W = c.width;
 	H = c.height;
 	
+	GridL = W/10;
+	GridR = GridL/2;
+	
 	console.log("Width: " + W + " Height: " + H);
 	
-	objs.push(new player([W/2,H/2],10, [0,1]))
+	objs.push(new player([W/2,H/2],1, [0,1]));
+	
+	objs.push(new block([GridR,GridR],1, [0,1]));
+	objs.push(new block([GridL*1+GridR,GridL*1+GridR],1, [0,1]));
+	objs.push(new block([GridL*2+GridR,GridR],1, [0,1]));
+	objs.push(new block([GridL*9+GridR,GridR],1, [0,1]));
+	objs.push(new block([GridL*9+GridR,GridL*7+GridR],1, [0,1]));
+	objs.push(new block([GridL*0+GridR,GridL*7+GridR],1, [0,1]));
+	
+	time = Date.now();
 	
 	//game();
 }
@@ -48,36 +65,45 @@ function game() {
 
 function sim() {
 	for (var i = 0; i < objs.length; i++) {
-		//objs[i].pos[0] += objs[i].vel[0] * diff/1;
-		//objs[i].pos[1] += objs[i].vel[1] * diff/10000;
+		objs[i].pos[0] += objs[i].vel[0] * (diff/1000);
+		objs[i].pos[1] += objs[i].vel[1] * (diff/1000);
 		//console.log(objs[i].pos[0]);
 	}
 }
 
 function draw() {
 	// Background
-	ctx.fillStyle = "#030322";
+	ctx.fillStyle = "#FFDD99";
 	ctx.fillRect(0, 0, W, H);
 	
 	//var obj = new player([W/2,H/2],10, [0,1]);
 	
-	// Each Polygon
-	for (var p = 0; p < objs[0].poly.length; p++) {
-		ctx.beginPath();
-		ctx.moveTo( (objs[0].poly[p].vert[0][0] * objs[0].size)+objs[0].pos[0], (objs[0].poly[p].vert[0][1] * objs[0].size)+objs[0].pos[1]);
-		// Each Vertex
-		for (var v = 1; v < objs[0].poly[p].vert.length; v++) {
-			ctx.lineTo((objs[0].poly[p].vert[v][0] * objs[0].size)+objs[0].pos[0], (objs[0].poly[p].vert[v][1] * objs[0].size)+objs[0].pos[1]);
+	for (var o = 0; o < objs.length; o++) {
+		// Each Polygon
+		for (var p = 0; p < objs[o].poly.length; p++) {
+			ctx.beginPath();
+			ctx.moveTo( (objs[o].poly[p].vert[0][0] * objs[o].size)+objs[o].pos[0], (objs[o].poly[p].vert[0][1] * objs[o].size)+objs[o].pos[1]);
+			
+			// Each Vertex
+			for (var v = 1; v < objs[o].poly[p].vert.length; v++) {
+				ctx.lineTo((objs[o].poly[p].vert[v][0] * objs[o].size)+objs[o].pos[0], (objs[o].poly[p].vert[v][1] * objs[o].size)+objs[o].pos[1]);
+			}
+			ctx.lineTo((objs[o].poly[p].vert[0][0] * objs[o].size)+objs[o].pos[0], (objs[o].poly[p].vert[0][1] * objs[o].size)+objs[o].pos[1]);
+			
+			ctx.strokeStyle = objs[o].poly[p].color;
+			ctx.stroke();
+			
+			ctx.fillStyle = objs[o].poly[p].color;
+			ctx.fill();
 		}
-		ctx.lineTo((objs[0].poly[p].vert[0][0] * objs[0].size)+objs[0].pos[0], (objs[0].poly[p].vert[0][1] * objs[0].size)+objs[0].pos[1]);
-		
-		ctx.strokeStyle = objs[0].poly[p].color;
-		ctx.stroke();
-		
-		ctx.fillStyle = objs[0].poly[p].color;
-		ctx.fill();
+		ctx.closePath();
 	}
-	ctx.closePath();
+	
+	
+}
+
+function collision () {
+	//
 }
 
 class poly {
@@ -89,6 +115,38 @@ class poly {
 	}
 }
 
+class block {
+	constructor(pos,size,dir) {
+		//
+		this.pos = pos;
+		this.size = size;
+		this.dir = dir;
+		this.vel = [0.0,0.0];
+		
+		var p=-1,v=-1; // p starts negative because I need ++ first
+		
+		this.poly = []; // init poly array
+		
+		v=-1; // v starts negative just for consistency
+		this.poly[++p] = new poly();
+		console.log(p);
+		this.poly[p].vert[++v] = [-(GridL/2),-(GridL/2)];
+		this.poly[p].vert[++v] = [(GridL/2),-(GridL/2)];
+		this.poly[p].vert[++v] = [(GridL/2),(GridL/2)];
+		this.poly[p].vert[++v] = [-(GridL/2),(GridL/2)];
+		this.poly[p].color = "#000000";
+		
+		v=-1;
+		this.poly[++p] = new poly();
+		console.log(p);
+		this.poly[p].vert[++v] = [-((GridL/2)-4),-((GridL/2)-4)];
+		this.poly[p].vert[++v] = [((GridL/2)-4),-((GridL/2)-4)];
+		this.poly[p].vert[++v] = [((GridL/2)-4),((GridL/2)-4)];
+		this.poly[p].vert[++v] = [-((GridL/2)-4),((GridL/2)-4)];
+		this.poly[p].color = "#AAAAAA";
+	}
+}
+
 class player {
 	constructor(pos,size,dir) {
 		//
@@ -96,30 +154,158 @@ class player {
 		this.pos = pos;
 		this.size = size;
 		this.dir = dir;
-		this.vel = [1.0,1.0];
+		this.vel = [0.0,0.0];
+		this.spd = 240;
 		
-		this.poly = [];
-		this.poly[0] = new poly();
-		this.poly[0].vert[0] = [0,4];
-		this.poly[0].vert[1] = [1,2];
-		this.poly[0].vert[2] = [-1,2];
-		this.poly[0].color = "#FF0000";
+		// Movement
+		this.mu = false;
+		this.ml = false;
+		this.mr = false;
+		this.md = false;
 		
-		this.poly[1] = new poly();
-		this.poly[1].vert[0] = [1,2];
-		this.poly[1].vert[1] = [-1,2];
-		this.poly[1].vert[2] = [-1,-2];
-		this.poly[1].vert[3] = [1,-2];
-		this.poly[1].color = "#FFFFFF";
+		// Draw data
+		var p=-1,v=-1; // p starts negative because I need ++ first
 		
-		this.poly[2] = new poly();
-		this.poly[2].vert[0] = [1,-2];
-		this.poly[2].vert[1] = [-1,-2];
-		this.poly[2].vert[2] = [-2,-3];
-		this.poly[2].vert[3] = [2,-3];
-		this.poly[2].color = "#0000FF";
+		this.poly = []; // init poly array
+		
+		v=-1; // v starts negative just for consistency
+		this.poly[++p] = new poly();
+		console.log(p);
+		this.poly[p].vert[++v] = [-(GridL/2),-(GridL/2)];
+		this.poly[p].vert[++v] = [(GridL/2),-(GridL/2)];
+		this.poly[p].vert[++v] = [(GridL/2),(GridL/2)];
+		this.poly[p].vert[++v] = [-(GridL/2),(GridL/2)];
+		this.poly[p].color = "#000000";
+		
+		v=-1;
+		this.poly[++p] = new poly();
+		console.log(p);
+		this.poly[p].vert[++v] = [-((GridL/2)-2),-((GridL/2)-2)];
+		this.poly[p].vert[++v] = [((GridL/2)-2),-((GridL/2)-2)];
+		this.poly[p].vert[++v] = [((GridL/2)-2),((GridL/2)-2)];
+		this.poly[p].vert[++v] = [-((GridL/2)-2),((GridL/2)-2)];
+		this.poly[p].color = "#00FF00";
+		
+		v=-1;
+		this.poly[++p] = new poly();
+		console.log(p);
+		this.poly[p].vert[++v] = [-12,-15];
+		this.poly[p].vert[++v] = [-10,-15];
+		this.poly[p].vert[++v] = [-10,0];
+		this.poly[p].vert[++v] = [-12,0];
+		this.poly[p].color = "#000000";
+		
+		v=-1;
+		this.poly[++p] = new poly();
+		this.poly[p].vert[++v] = [12,-15];
+		this.poly[p].vert[++v] = [10,-15];
+		this.poly[p].vert[++v] = [10,0];
+		this.poly[p].vert[++v] = [12,0];
+		this.poly[p].color = "#000000";
+	}
+	
+	moveU(release) {
+		if (!this.mu && !release) { // if not moving and button pressed
+			this.mu = true;
+			this.vel[1] -= this.spd;
+		} else if (this.mu && release) { // if moving and button released
+			this.mu = false;
+			this.vel[1] += this.spd;
+		}
+		
+	}
+	
+	moveL(release) {
+		if (!this.ml && !release) { // if not moving and button pressed
+			this.ml = true;
+			this.vel[0] -= this.spd;
+		} else if (this.ml && release) { // if moving and button released
+			this.ml = false;
+			this.vel[0] += this.spd;
+		}
+	}
+	
+	moveR(release) {
+		if (!this.mr && !release) { // if not moving and button pressed
+			this.mr = true;
+			this.vel[0] += this.spd;
+		} else if (this.mr && release) { // if moving and button released
+			this.mr = false;
+			this.vel[0] -= this.spd;
+		}
+		
+	}
+	
+	moveD(release) {
+		if (!this.md && !release) { // if not moving and button pressed
+			this.md = true;
+			this.vel[1] += this.spd;
+		} else if (this.md && release) { // if moving and button released
+			this.md = false;
+			this.vel[1] -= this.spd;
+		}
 	}
 }
+
+addEventListener('keydown', event => {
+	
+	switch (event.code) {
+		case "Space":
+			console.log('Space pressed');
+			break;
+		case "KeyW":
+			console.log('W pressed');
+			objs[0].moveU(0);
+			break;
+		case "KeyA":
+			console.log('A pressed');
+			objs[0].moveL(0);
+			break;
+		case "KeyS":
+			console.log('S pressed');
+			objs[0].moveD(0);
+			break;
+		case "KeyD":
+			console.log('D pressed');
+			objs[0].moveR(0);
+			break;
+		case "ShiftLeft"://open case continues to next case
+		case "ShiftRight":
+			console.log('Shift pressed');
+			break;
+		
+	}
+});
+
+addEventListener('keyup', event => {
+	
+	switch (event.code) {
+		case "Space":
+			console.log('Space released');
+			break;
+		case "KeyW":
+			console.log('W released');
+			objs[0].moveU(1);
+			break;
+		case "KeyA":
+			console.log('A released');
+			objs[0].moveL(1);
+			break;
+		case "KeyS":
+			console.log('S released');
+			objs[0].moveD(1);
+			break;
+		case "KeyD":
+			console.log('D released');
+			objs[0].moveR(1);
+			break;
+		case "ShiftLeft":
+		case "ShiftRight":
+			console.log('Shift released');
+			break;
+		
+	}
+});
 
 setup();
 game();
