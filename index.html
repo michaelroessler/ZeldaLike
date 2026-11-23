@@ -39,10 +39,10 @@ function setup() {
 	
 	objs.push(new player([W/2,H/2],1, [0,1]));
 	
-	objs.push(new block([GridR,GridR],1, [0,1]));
-	objs.push(new block([GridL*1+GridR,GridL*1+GridR],1, [0,1]));
-	objs.push(new block([GridL*2+GridR,GridR],1, [0,1]));
-	objs.push(new block([GridL*9+GridR,GridR],1, [0,1]));
+	objs.push(new block([GridR,GridL*1+GridR],1, [0,1]));
+	objs.push(new block([GridL*1+GridR,GridL*2+GridR],1, [0,1]));
+	objs.push(new block([GridL*2+GridR,GridL*1+GridR],1, [0,1]));
+	objs.push(new block([GridL*9+GridR,GridL*0+GridR],1, [0,1]));
 	objs.push(new block([GridL*9+GridR,GridL*7+GridR],1, [0,1]));
 	objs.push(new block([GridL*0+GridR,GridL*7+GridR],1, [0,1]));
 	
@@ -64,10 +64,42 @@ function game() {
 }
 
 function sim() {
-	for (var i = 0; i < objs.length; i++) {
+	
+	objs[0].xCol = false;
+	objs[0].yCol = false;
+	for (var i = 1; i < objs.length; i++) {
+		if (isCollision(objs[0], objs[0].pos[0]+objs[0].vel[0]*(diff/1000), objs[0].pos[1], objs[i], objs[i].pos[0], objs[i].pos[1])) {
+			if (objs[0].vel[0] > 0) {
+				objs[0].pos[0] = objs[i].pos[0]-(objs[0].w+objs[i].w);
+			} else {
+				objs[0].pos[0] = objs[i].pos[0]+(objs[0].w+objs[i].w);
+			}
+			objs[0].xCol = true;
+		} else {
+			//
+		}
+		
+		if (isCollision(objs[0], objs[0].pos[0], objs[0].pos[1]+objs[0].vel[1]*(diff/1000), objs[i], objs[i].pos[0], objs[i].pos[1])) {
+			if (objs[0].vel[1] > 0) {
+				objs[0].pos[1] = objs[i].pos[1]-(objs[0].h+objs[i].h);
+			} else {
+				objs[0].pos[1] = objs[i].pos[1]+(objs[0].h+objs[i].h);
+			}
+			objs[0].yCol = true;
+		}
+		/*
 		objs[i].pos[0] += objs[i].vel[0] * (diff/1000);
 		objs[i].pos[1] += objs[i].vel[1] * (diff/1000);
 		//console.log(objs[i].pos[0]);
+		if (i != 0) {
+			isCollision(objs[0], objs[0].pos[0], objs[0].pos[1], objs[i], objs[i].pos[0], objs[i].pos[1]);
+		}*/
+	}
+	if (!objs[0].xCol) {
+		objs[0].pos[0] += objs[0].vel[0] * (diff/1000);
+	}
+	if (!objs[0].yCol) {
+		objs[0].pos[1] += objs[0].vel[1] * (diff/1000);
 	}
 }
 
@@ -77,6 +109,7 @@ function draw() {
 	ctx.fillRect(0, 0, W, H);
 	
 	//var obj = new player([W/2,H/2],10, [0,1]);
+	
 	
 	for (var o = 0; o < objs.length; o++) {
 		// Each Polygon
@@ -96,14 +129,19 @@ function draw() {
 			ctx.fillStyle = objs[o].poly[p].color;
 			ctx.fill();
 		}
-		ctx.closePath();
+		
 	}
+	ctx.closePath();
 	
 	
 }
 
-function collision () {
+function isCollision (obj1, x1, y1, obj2, x2, y2) {
 	//
+	if (x1 < x2 + (obj1.w+obj2.w) && x1 > x2 - (obj1.w+obj2.w) && y1 < y2 + (obj1.h+obj2.h) && y1 > y2 - (obj1.h+obj2.h)) {
+		console.log("Collision");
+		return true;
+	}
 }
 
 class poly {
@@ -120,6 +158,8 @@ class block {
 		//
 		this.pos = pos;
 		this.size = size;
+		this.w = GridR;
+		this.h = GridR;
 		this.dir = dir;
 		this.vel = [0.0,0.0];
 		
@@ -153,6 +193,8 @@ class player {
 		//var p = {'vert':[],'color':""};
 		this.pos = pos;
 		this.size = size;
+		this.w = GridR-1;
+		this.h = GridR-1;
 		this.dir = dir;
 		this.vel = [0.0,0.0];
 		this.spd = 240;
@@ -163,6 +205,9 @@ class player {
 		this.mr = false;
 		this.md = false;
 		
+		this.xCol = false;
+		this.yCol = false;
+		
 		// Draw data
 		var p=-1,v=-1; // p starts negative because I need ++ first
 		
@@ -171,19 +216,19 @@ class player {
 		v=-1; // v starts negative just for consistency
 		this.poly[++p] = new poly();
 		console.log(p);
-		this.poly[p].vert[++v] = [-(GridL/2),-(GridL/2)];
-		this.poly[p].vert[++v] = [(GridL/2),-(GridL/2)];
-		this.poly[p].vert[++v] = [(GridL/2),(GridL/2)];
-		this.poly[p].vert[++v] = [-(GridL/2),(GridL/2)];
+		this.poly[p].vert[++v] = [-this.w,-this.w];
+		this.poly[p].vert[++v] = [this.w,-this.w];
+		this.poly[p].vert[++v] = [this.w,this.w];
+		this.poly[p].vert[++v] = [-this.w,this.w];
 		this.poly[p].color = "#000000";
 		
 		v=-1;
 		this.poly[++p] = new poly();
 		console.log(p);
-		this.poly[p].vert[++v] = [-((GridL/2)-2),-((GridL/2)-2)];
-		this.poly[p].vert[++v] = [((GridL/2)-2),-((GridL/2)-2)];
-		this.poly[p].vert[++v] = [((GridL/2)-2),((GridL/2)-2)];
-		this.poly[p].vert[++v] = [-((GridL/2)-2),((GridL/2)-2)];
+		this.poly[p].vert[++v] = [-(this.w-2),-(this.w-2)];
+		this.poly[p].vert[++v] = [(this.w-2),-(this.w-2)];
+		this.poly[p].vert[++v] = [(this.w-2),(this.w-2)];
+		this.poly[p].vert[++v] = [-(this.w-2),(this.w-2)];
 		this.poly[p].color = "#00FF00";
 		
 		v=-1;
