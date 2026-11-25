@@ -1,7 +1,8 @@
 <html>
 <head>
-<script src="https://ajax.googleapis.com/ajax/libs/jquery/3.6.4/jquery.min.js"></script>
+<!-- <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.6.4/jquery.min.js"></script> -->
 <script src="input.js"></script>
+<script src="world.js"></script>
 <title>Zelda Like</title>
 </head>
 <body>
@@ -20,6 +21,9 @@ var GridR;	// Grid space radius (length / 2)
 
 var time=0, diff=0;
 
+var level = "22";
+
+var po; // Player Object
 var objs = [];
 
 var inputs = [];
@@ -37,6 +41,11 @@ function setup() {
 	
 	console.log("Width: " + W + " Height: " + H);
 	
+	level = 22;
+	
+	po = new player([W/2,H/2],1, [0,1]);
+	loadLevel(level);
+	/*
 	objs.push(new player([W/2,H/2],1, [0,1]));
 	
 	objs.push(new block([GridR,GridL*1+GridR],1, [0,1]));
@@ -44,7 +53,7 @@ function setup() {
 	objs.push(new block([GridL*2+GridR,GridL*1+GridR],1, [0,1]));
 	objs.push(new block([GridL*9+GridR,GridL*0+GridR],1, [0,1]));
 	objs.push(new block([GridL*9+GridR,GridL*7+GridR],1, [0,1]));
-	objs.push(new block([GridL*0+GridR,GridL*7+GridR],1, [0,1]));
+	objs.push(new block([GridL*0+GridR,GridL*7+GridR],1, [0,1]));*/
 	
 	time = Date.now();
 	
@@ -65,41 +74,68 @@ function game() {
 
 function sim() {
 	
-	objs[0].xCol = false;
-	objs[0].yCol = false;
-	for (var i = 1; i < objs.length; i++) {
-		if (isCollision(objs[0], objs[0].pos[0]+objs[0].vel[0]*(diff/1000), objs[0].pos[1], objs[i], objs[i].pos[0], objs[i].pos[1])) {
-			if (objs[0].vel[0] > 0) {
-				objs[0].pos[0] = objs[i].pos[0]-(objs[0].w+objs[i].w);
+	// Collision
+	po.xCol = false;
+	po.yCol = false;
+	for (var i = 0; i < objs.length; i++) { // Check every object for potential collision on x-axis and y-axis
+		if (isCollision(po, po.pos[0]+po.vel[0]*(diff/1000), po.pos[1], objs[i], objs[i].pos[0], objs[i].pos[1])) {
+			if (po.vel[0] > 0) {
+				po.pos[0] = objs[i].pos[0]-(po.w+objs[i].w);
 			} else {
-				objs[0].pos[0] = objs[i].pos[0]+(objs[0].w+objs[i].w);
+				po.pos[0] = objs[i].pos[0]+(po.w+objs[i].w);
 			}
-			objs[0].xCol = true;
+			po.xCol = true;
 		} else {
 			//
 		}
 		
-		if (isCollision(objs[0], objs[0].pos[0], objs[0].pos[1]+objs[0].vel[1]*(diff/1000), objs[i], objs[i].pos[0], objs[i].pos[1])) {
-			if (objs[0].vel[1] > 0) {
-				objs[0].pos[1] = objs[i].pos[1]-(objs[0].h+objs[i].h);
+		if (isCollision(po, po.pos[0], po.pos[1]+po.vel[1]*(diff/1000), objs[i], objs[i].pos[0], objs[i].pos[1])) {
+			if (po.vel[1] > 0) {
+				po.pos[1] = objs[i].pos[1]-(po.h+objs[i].h);
 			} else {
-				objs[0].pos[1] = objs[i].pos[1]+(objs[0].h+objs[i].h);
+				po.pos[1] = objs[i].pos[1]+(po.h+objs[i].h);
 			}
-			objs[0].yCol = true;
+			po.yCol = true;
 		}
 		/*
 		objs[i].pos[0] += objs[i].vel[0] * (diff/1000);
 		objs[i].pos[1] += objs[i].vel[1] * (diff/1000);
 		//console.log(objs[i].pos[0]);
 		if (i != 0) {
-			isCollision(objs[0], objs[0].pos[0], objs[0].pos[1], objs[i], objs[i].pos[0], objs[i].pos[1]);
+			isCollision(po, po.pos[0], po.pos[1], objs[i], objs[i].pos[0], objs[i].pos[1]);
 		}*/
 	}
-	if (!objs[0].xCol) {
-		objs[0].pos[0] += objs[0].vel[0] * (diff/1000);
+	if (!po.xCol) { // if no collision then move normally
+		po.pos[0] += po.vel[0] * (diff/1000);
 	}
-	if (!objs[0].yCol) {
-		objs[0].pos[1] += objs[0].vel[1] * (diff/1000);
+	if (!po.yCol) {
+		po.pos[1] += po.vel[1] * (diff/1000);
+	}
+	
+	if (po.pos[0] < 0) { 		// Scroll Left
+		if (loadLevel(level-10)) {
+			level -= 10;
+			po.pos[0] = W - GridR;
+		}
+		console.log("Scroll Left " + level);
+	} else if (po.pos[0] > W) {	// Scroll Right
+		if (loadLevel(level+10)) {
+			level += 10;
+			po.pos[0] = GridR;
+		}
+		console.log("Scroll Right " + level);
+	} else if (po.pos[1] < 0) {	// Scroll Up
+		if (loadLevel(level+1)) {
+			level += 1;
+			po.pos[1] = H - GridR;
+		}
+		console.log("Scroll Up " + level);
+	} else if (po.pos[1] > H) {	// Scroll Down
+		if (loadLevel(level-1)) {
+			level -= 1;
+			po.pos[1] = GridR;
+		}
+		console.log("Scroll Down " + level);
 	}
 }
 
@@ -123,13 +159,33 @@ function draw() {
 			}
 			ctx.lineTo((objs[o].poly[p].vert[0][0] * objs[o].size)+objs[o].pos[0], (objs[o].poly[p].vert[0][1] * objs[o].size)+objs[o].pos[1]);
 			
-			ctx.strokeStyle = objs[o].poly[p].color;
+			ctx.strokeStyle = objs[o].poly[p].outline;
+			ctx.lineWidth = objs[o].poly[p].line;
 			ctx.stroke();
 			
 			ctx.fillStyle = objs[o].poly[p].color;
 			ctx.fill();
 		}
 		
+	}
+	for (var p = 0; p < po.poly.length; p++) {
+		ctx.beginPath();
+		ctx.moveTo( (po.poly[p].vert[0][0] * po.size)+po.pos[0], (po.poly[p].vert[0][1] * po.size)+po.pos[1]);
+		
+		// Each Vertex
+		for (var v = 1; v < po.poly[p].vert.length; v++) {
+			ctx.lineTo((po.poly[p].vert[v][0] * po.size)+po.pos[0], (po.poly[p].vert[v][1] * po.size)+po.pos[1]);
+		}
+		ctx.lineTo((po.poly[p].vert[0][0] * po.size)+po.pos[0], (po.poly[p].vert[0][1] * po.size)+po.pos[1]);
+		
+		if (po.poly[p].line > 0) {
+			ctx.strokeStyle = po.poly[p].outline;
+			ctx.lineWidth = po.poly[p].line;
+		}
+		ctx.stroke();
+		
+		ctx.fillStyle = po.poly[p].color;
+		ctx.fill();
 	}
 	ctx.closePath();
 	
@@ -149,7 +205,8 @@ class poly {
 		//
 		this.vert = [];
 		this.color;
-		this.line;
+		this.outline = "#000000";
+		this.line = 0;
 	}
 }
 
@@ -193,8 +250,8 @@ class player {
 		//var p = {'vert':[],'color':""};
 		this.pos = pos;
 		this.size = size;
-		this.w = GridR-1;
-		this.h = GridR-1;
+		this.w = GridR-4;
+		this.h = GridR-4;
 		this.dir = dir;
 		this.vel = [0.0,0.0];
 		this.spd = 240;
@@ -292,65 +349,6 @@ class player {
 	}
 }
 
-addEventListener('keydown', event => {
-	
-	switch (event.code) {
-		case "Space":
-			console.log('Space pressed');
-			break;
-		case "KeyW":
-			console.log('W pressed');
-			objs[0].moveU(0);
-			break;
-		case "KeyA":
-			console.log('A pressed');
-			objs[0].moveL(0);
-			break;
-		case "KeyS":
-			console.log('S pressed');
-			objs[0].moveD(0);
-			break;
-		case "KeyD":
-			console.log('D pressed');
-			objs[0].moveR(0);
-			break;
-		case "ShiftLeft"://open case continues to next case
-		case "ShiftRight":
-			console.log('Shift pressed');
-			break;
-		
-	}
-});
-
-addEventListener('keyup', event => {
-	
-	switch (event.code) {
-		case "Space":
-			console.log('Space released');
-			break;
-		case "KeyW":
-			console.log('W released');
-			objs[0].moveU(1);
-			break;
-		case "KeyA":
-			console.log('A released');
-			objs[0].moveL(1);
-			break;
-		case "KeyS":
-			console.log('S released');
-			objs[0].moveD(1);
-			break;
-		case "KeyD":
-			console.log('D released');
-			objs[0].moveR(1);
-			break;
-		case "ShiftLeft":
-		case "ShiftRight":
-			console.log('Shift released');
-			break;
-		
-	}
-});
 
 setup();
 game();
