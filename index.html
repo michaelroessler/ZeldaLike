@@ -2,6 +2,8 @@
 <head>
 <!-- <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.6.4/jquery.min.js"></script> -->
 <script src="input.js"></script>
+<script src ="LevelData.js"></script>
+<!-- <script id="leveldata" type="application/json" src ="LevelData.json"></script> -->
 <script src="world.js"></script>
 <title>Zelda Like</title>
 </head>
@@ -144,7 +146,6 @@ function draw() {
 	ctx.fillStyle = "#FFDD99";
 	ctx.fillRect(0, 0, W, H);
 	
-	//var obj = new player([W/2,H/2],10, [0,1]);
 	
 	
 	for (var o = 0; o < objs.length; o++) {

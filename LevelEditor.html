@@ -1,0 +1,504 @@
+<html>
+<head>
+<!-- <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.6.4/jquery.min.js"></script> 
+<script src="input.js"></script>
+<script src="world.js"></script> -->
+<title>Zelda Like</title>
+</head>
+<body>
+<div style="float: right;">
+	<canvas id="canvas" width="800" height="640" style="border: 4px solid black; margin: auto; display: block;"></canvas>
+</div>
+<div style="float: left;">
+	<input type="button" value="PRINT" onclick="printLevel()" style="width: 100%; height: 5%; color: blue; background-color: grey;">
+	<input type="button" value="CLEAR" onclick="clearConsole()" style="width: 100%; height: 5%; color: red; background-color: grey;"><br><br><br>
+	<select id="objselect" style="width: 100%; height: 5%;">
+		<option value="0">Erase</option>
+		<option value="1">Block1</option>
+		<option value="2">Block2</option>
+		<option value="3">Block3</option><!-- getElementById('objselect').value = 0; -->
+	</select>
+	<input type="button" value="ERASER" onclick="getElementById('objselect').value = 0;" style="width: 100%; height: 5%;"><br>
+
+	<input type="radio" class="lvls" name="levels" id="11" value="11" style="border: 2px solid black;" checked><label for="11">Erase</label><br>
+	<input type="radio" class="lvls" name="levels" id="12" value="12" style="border: 2px solid black;"><label for="12">Place Object</label>
+</div>
+
+<script>
+var c = document.getElementById("canvas");		// Canvas
+var ctx;	// Context
+
+var W;	// Width
+var H;	// Height
+
+var GridL;	// Grid space length
+var GridR;	// Grid space radius (length / 2)
+
+var GridX, GridY;
+
+var time=0, diff=0;
+
+var level = "22";
+
+var po; // Player Object
+var objs = [];
+
+var inputs = [];
+
+
+function setup() {
+	//c = document.getElementById("canvas"); //$("#canvas");
+	ctx = c.getContext("2d");
+	
+	W = c.width;
+	H = c.height;
+	
+	GridL = W/10;
+	GridR = GridL/2;
+	
+	GridX = -1;
+	GridY = -1;
+	
+	for (var i = 0; i < 10; i++) {
+		objs[i] = [];
+	}
+	
+	//console.log("Width: " + W + " Height: " + H);
+	
+	level = 22;
+	
+	//po = new player([W/2,H/2],1, [0,1]);
+	//loadLevel(level);
+	/*
+	objs.push(new player([W/2,H/2],1, [0,1]));
+	
+	objs.push(new block([GridR,GridL*1+GridR],1, [0,1]));
+	objs.push(new block([GridL*1+GridR,GridL*2+GridR],1, [0,1]));
+	objs.push(new block([GridL*2+GridR,GridL*1+GridR],1, [0,1]));
+	objs.push(new block([GridL*9+GridR,GridL*0+GridR],1, [0,1]));
+	objs.push(new block([GridL*9+GridR,GridL*7+GridR],1, [0,1]));
+	objs.push(new block([GridL*0+GridR,GridL*7+GridR],1, [0,1]));*/
+	
+	time = Date.now();
+	
+	//game();
+}
+
+function game() {
+	//
+	window.requestAnimationFrame(game);// Causes loop
+	
+	var t = Date.now();
+	diff = t - time;
+	time = t;
+	////console.log(diff);
+	//sim();
+	draw();
+}
+
+function sim() {
+	
+	// Collision
+	po.xCol = false;
+	po.yCol = false;
+	for (var i = 0; i < objs.length; i++) { // Check every object for potential collision on x-axis and y-axis
+		if (isCollision(po, po.pos[0]+po.vel[0]*(diff/1000), po.pos[1], objs[i], objs[i].pos[0], objs[i].pos[1])) {
+			if (po.vel[0] > 0) {
+				po.pos[0] = objs[i].pos[0]-(po.w+objs[i].w);
+			} else {
+				po.pos[0] = objs[i].pos[0]+(po.w+objs[i].w);
+			}
+			po.xCol = true;
+		} else {
+			//
+		}
+		
+		if (isCollision(po, po.pos[0], po.pos[1]+po.vel[1]*(diff/1000), objs[i], objs[i].pos[0], objs[i].pos[1])) {
+			if (po.vel[1] > 0) {
+				po.pos[1] = objs[i].pos[1]-(po.h+objs[i].h);
+			} else {
+				po.pos[1] = objs[i].pos[1]+(po.h+objs[i].h);
+			}
+			po.yCol = true;
+		}
+		/*
+		objs[i].pos[0] += objs[i].vel[0] * (diff/1000);
+		objs[i].pos[1] += objs[i].vel[1] * (diff/1000);
+		////console.log(objs[i].pos[0]);
+		if (i != 0) {
+			isCollision(po, po.pos[0], po.pos[1], objs[i], objs[i].pos[0], objs[i].pos[1]);
+		}*/
+	}
+	if (!po.xCol) { // if no collision then move normally
+		po.pos[0] += po.vel[0] * (diff/1000);
+	}
+	if (!po.yCol) {
+		po.pos[1] += po.vel[1] * (diff/1000);
+	}
+	
+	if (po.pos[0] < 0) { 		// Scroll Left
+		if (loadLevel(level-10)) {
+			level -= 10;
+			po.pos[0] = W - GridR;
+		}
+		//console.log("Scroll Left " + level);
+	} else if (po.pos[0] > W) {	// Scroll Right
+		if (loadLevel(level+10)) {
+			level += 10;
+			po.pos[0] = GridR;
+		}
+		//console.log("Scroll Right " + level);
+	} else if (po.pos[1] < 0) {	// Scroll Up
+		if (loadLevel(level+1)) {
+			level += 1;
+			po.pos[1] = H - GridR;
+		}
+		//console.log("Scroll Up " + level);
+	} else if (po.pos[1] > H) {	// Scroll Down
+		if (loadLevel(level-1)) {
+			level -= 1;
+			po.pos[1] = GridR;
+		}
+		//console.log("Scroll Down " + level);
+	}
+}
+
+function draw() {
+	// Background
+	ctx.fillStyle = "#FFDD99";
+	ctx.fillRect(0, 0, W, H);
+	
+	// Draw Grid Vertical
+	for (var x = GridL; x < W; x += GridL) {
+		ctx.beginPath();
+		ctx.moveTo(x,0);
+		ctx.lineTo(x,H);
+		
+		ctx.strokeStyle = "#000000";
+		ctx.lineWidth = 2;
+		ctx.stroke();
+	}
+	// Draw Grid Horizontal
+	for (var y = GridL; y < H; y += GridL) {
+		ctx.beginPath();
+		ctx.moveTo(0,y);
+		ctx.lineTo(W,y);
+		
+		ctx.strokeStyle = "#000000";
+		ctx.lineWidth = 2;
+		ctx.stroke();
+	}
+	
+	// Highlight selected space
+	if (GridX >= 0 && GridY >= 0) {
+		//
+		ctx.globalAlpha = 0.2;
+		ctx.beginPath();
+		ctx.moveTo(GridL * GridX, GridL * GridY);
+		ctx.lineTo(GridL * GridX + GridL, GridL * GridY);
+		ctx.lineTo(GridL * GridX + GridL, GridL * GridY + GridL);
+		ctx.lineTo(GridL * GridX, GridL * GridY + GridL);
+		ctx.lineTo(GridL * GridX, GridL * GridY);
+		
+		ctx.strokeStyle = "#00FF00";
+		ctx.lineWidth = 0;
+		ctx.stroke();
+		
+		ctx.fillStyle = "#00FF00";
+		ctx.fill();
+		ctx.globalAlpha = 1.0;
+	}
+	
+	for (var x = 0; x < 10; x++) {
+		for (var y = 0; y < 8; y++) {
+			// Each Polygon
+			if (objs[x][y] != undefined) {
+				for (var p = 0; p < objs[x][y].poly.length; p++) {
+					ctx.beginPath();
+					ctx.moveTo( (objs[x][y].poly[p].vert[0][0] * objs[x][y].size)+objs[x][y].pos[0], (objs[x][y].poly[p].vert[0][1] * objs[x][y].size)+objs[x][y].pos[1]);
+					
+					// Each Vertex
+					for (var v = 1; v < objs[x][y].poly[p].vert.length; v++) {
+						ctx.lineTo((objs[x][y].poly[p].vert[v][0] * objs[x][y].size)+objs[x][y].pos[0], (objs[x][y].poly[p].vert[v][1] * objs[x][y].size)+objs[x][y].pos[1]);
+					}
+					ctx.lineTo((objs[x][y].poly[p].vert[0][0] * objs[x][y].size)+objs[x][y].pos[0], (objs[x][y].poly[p].vert[0][1] * objs[x][y].size)+objs[x][y].pos[1]);
+					
+					ctx.strokeStyle = objs[x][y].poly[p].outline;
+					ctx.lineWidth = objs[x][y].poly[p].line;
+					ctx.stroke();
+					
+					ctx.fillStyle = objs[x][y].poly[p].color;
+					ctx.fill();
+				}
+			}
+		}
+		
+		
+	}
+	/*for (var p = 0; p < po.poly.length; p++) {
+		ctx.beginPath();
+		ctx.moveTo( (po.poly[p].vert[0][0] * po.size)+po.pos[0], (po.poly[p].vert[0][1] * po.size)+po.pos[1]);
+		
+		// Each Vertex
+		for (var v = 1; v < po.poly[p].vert.length; v++) {
+			ctx.lineTo((po.poly[p].vert[v][0] * po.size)+po.pos[0], (po.poly[p].vert[v][1] * po.size)+po.pos[1]);
+		}
+		ctx.lineTo((po.poly[p].vert[0][0] * po.size)+po.pos[0], (po.poly[p].vert[0][1] * po.size)+po.pos[1]);
+		
+		if (po.poly[p].line > 0) {
+			ctx.strokeStyle = po.poly[p].outline;
+			ctx.lineWidth = po.poly[p].line;
+		}
+		ctx.stroke();
+		
+		ctx.fillStyle = po.poly[p].color;
+		ctx.fill();
+	}*/
+	ctx.closePath();
+	
+	
+}
+
+function determineGridSpace(x, y) {
+	// Maximum should be W or H
+	if (x > W) { x = W; }
+	if (y > H) { y = H; }
+	
+	// Counting the grid spaces
+	var gridX = 0;
+	var gridY = 0;
+	for (x = x; x > GridL; x-= GridL) {
+		gridX++;
+	}
+	for (y = y; y > GridL; y-= GridL) {
+		gridY++;
+	}
+	//console.log("X: " + gridX + ", Y: " + gridY);
+	return [gridX, gridY];
+}
+
+function selectGridSpace(x, y) {
+	GridX = x;
+	GridY = y;
+}
+
+function placeObject() {
+	//
+	var object = document.getElementById("objselect").value;
+	//console.log(object);
+	switch (object) {
+		case '0':
+			objs[GridX][GridY] = null;
+			break;
+		case '1':
+			objs[GridX][GridY] = new block([GridL*GridX+GridR,GridL*GridY+GridR],1, [0,1]);
+			break;
+	}
+}
+
+function printLevel() {
+	var string = '{ "objs": [ ';
+	for (var x = 0; x < 10; x++) {
+		for (var y = 0; y < 8; y++) {
+			if (objs[x][y] != null) {
+				string += '{"id":' + objs[x][y].id + ', "x":' + x + ', "y":' + y + '},';
+			}
+		}
+		
+	}
+	string = string.substr(0,string.length-1);
+	string += ' ] }';
+	console.log(string);
+}
+
+function clearConsole() {
+	console.clear();
+}
+
+function getMouseXY(x, y) {
+	// Get canvas position
+	var rect = c.getBoundingClientRect();
+	// The "absolute" position - canvas position - border size
+	return [x - rect.left - 4, y - rect.top - 4];
+}
+
+function isCollision (obj1, x1, y1, obj2, x2, y2) {
+	//
+	if (x1 < x2 + (obj1.w+obj2.w) && x1 > x2 - (obj1.w+obj2.w) && y1 < y2 + (obj1.h+obj2.h) && y1 > y2 - (obj1.h+obj2.h)) {
+		//console.log("Collision");
+		return true;
+	}
+}
+
+class poly {
+	constructor() {
+		//
+		this.vert = [];
+		this.color;
+		this.outline = "#000000";
+		this.line = 0;
+	}
+}
+
+class block {
+	constructor(pos,size,dir) {
+		//
+		this.id = 1;
+		this.pos = pos;
+		this.size = size;
+		this.w = GridR;
+		this.h = GridR;
+		this.dir = dir;
+		this.vel = [0.0,0.0];
+		
+		var p=-1,v=-1; // p starts negative because I need ++ first
+		
+		this.poly = []; // init poly array
+		
+		v=-1; // v starts negative just for consistency
+		this.poly[++p] = new poly();
+		//console.log(p);
+		this.poly[p].vert[++v] = [-(GridL/2),-(GridL/2)];
+		this.poly[p].vert[++v] = [(GridL/2),-(GridL/2)];
+		this.poly[p].vert[++v] = [(GridL/2),(GridL/2)];
+		this.poly[p].vert[++v] = [-(GridL/2),(GridL/2)];
+		this.poly[p].color = "#000000";
+		
+		v=-1;
+		this.poly[++p] = new poly();
+		//console.log(p);
+		this.poly[p].vert[++v] = [-((GridL/2)-4),-((GridL/2)-4)];
+		this.poly[p].vert[++v] = [((GridL/2)-4),-((GridL/2)-4)];
+		this.poly[p].vert[++v] = [((GridL/2)-4),((GridL/2)-4)];
+		this.poly[p].vert[++v] = [-((GridL/2)-4),((GridL/2)-4)];
+		this.poly[p].color = "#AAAAAA";
+	}
+}
+
+class player {
+	constructor(pos,size,dir) {
+		//
+		//var p = {'vert':[],'color':""};
+		this.pos = pos;
+		this.size = size;
+		this.w = GridR-4;
+		this.h = GridR-4;
+		this.dir = dir;
+		this.vel = [0.0,0.0];
+		this.spd = 240;
+		
+		// Movement
+		this.mu = false;
+		this.ml = false;
+		this.mr = false;
+		this.md = false;
+		
+		this.xCol = false;
+		this.yCol = false;
+		
+		// Draw data
+		var p=-1,v=-1; // p starts negative because I need ++ first
+		
+		this.poly = []; // init poly array
+		
+		v=-1; // v starts negative just for consistency
+		this.poly[++p] = new poly();
+		//console.log(p);
+		this.poly[p].vert[++v] = [-this.w,-this.w];
+		this.poly[p].vert[++v] = [this.w,-this.w];
+		this.poly[p].vert[++v] = [this.w,this.w];
+		this.poly[p].vert[++v] = [-this.w,this.w];
+		this.poly[p].color = "#000000";
+		
+		v=-1;
+		this.poly[++p] = new poly();
+		//console.log(p);
+		this.poly[p].vert[++v] = [-(this.w-2),-(this.w-2)];
+		this.poly[p].vert[++v] = [(this.w-2),-(this.w-2)];
+		this.poly[p].vert[++v] = [(this.w-2),(this.w-2)];
+		this.poly[p].vert[++v] = [-(this.w-2),(this.w-2)];
+		this.poly[p].color = "#00FF00";
+		
+		v=-1;
+		this.poly[++p] = new poly();
+		//console.log(p);
+		this.poly[p].vert[++v] = [-12,-15];
+		this.poly[p].vert[++v] = [-10,-15];
+		this.poly[p].vert[++v] = [-10,0];
+		this.poly[p].vert[++v] = [-12,0];
+		this.poly[p].color = "#000000";
+		
+		v=-1;
+		this.poly[++p] = new poly();
+		this.poly[p].vert[++v] = [12,-15];
+		this.poly[p].vert[++v] = [10,-15];
+		this.poly[p].vert[++v] = [10,0];
+		this.poly[p].vert[++v] = [12,0];
+		this.poly[p].color = "#000000";
+	}
+	
+	moveU(release) {
+		if (!this.mu && !release) { // if not moving and button pressed
+			this.mu = true;
+			this.vel[1] -= this.spd;
+		} else if (this.mu && release) { // if moving and button released
+			this.mu = false;
+			this.vel[1] += this.spd;
+		}
+		
+	}
+	
+	moveL(release) {
+		if (!this.ml && !release) { // if not moving and button pressed
+			this.ml = true;
+			this.vel[0] -= this.spd;
+		} else if (this.ml && release) { // if moving and button released
+			this.ml = false;
+			this.vel[0] += this.spd;
+		}
+	}
+	
+	moveR(release) {
+		if (!this.mr && !release) { // if not moving and button pressed
+			this.mr = true;
+			this.vel[0] += this.spd;
+		} else if (this.mr && release) { // if moving and button released
+			this.mr = false;
+			this.vel[0] -= this.spd;
+		}
+		
+	}
+	
+	moveD(release) {
+		if (!this.md && !release) { // if not moving and button pressed
+			this.md = true;
+			this.vel[1] += this.spd;
+		} else if (this.md && release) { // if moving and button released
+			this.md = false;
+			this.vel[1] -= this.spd;
+		}
+	}
+}
+
+c.addEventListener("mousemove", function (event) {
+	var mouse = getMouseXY(event.clientX, event.clientY);
+	
+	var xy = determineGridSpace(mouse[0], mouse[1])
+	selectGridSpace(xy[0], xy[1]);
+	//console.log(rect.top, rect.right, rect.bottom, rect.left);
+	//console.log("X: " + (event.clientX-rect.left-4) + " Y: " + (event.clientY-rect.top-4));
+});
+c.addEventListener("mousedown", function (event) {
+	var mouse = getMouseXY(event.clientX, event.clientY);
+	
+	var xy = determineGridSpace(mouse[0], mouse[1])
+	selectGridSpace(xy[0], xy[1]);
+	placeObject();
+	//console.log(rect.top, rect.right, rect.bottom, rect.left);
+	//console.log("X: " + (event.clientX-rect.left-4) + " Y: " + (event.clientY-rect.top-4));
+});
+
+setup();
+game();
+</script>
+</body>
